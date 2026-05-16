@@ -122,35 +122,30 @@ class MultiAgentSearchAgent(Agent):
         self.depth = int(depth)
 
 class MinimaxAgent(MultiAgentSearchAgent):
-    """
-    Your minimax agent (question 2)
-    """
 
     def getAction(self, gameState: GameState):
-        """
-        Returns the minimax action from the current gameState using self.depth
-        and self.evaluationFunction.
+        def minimax(state, depth, agentIndex):
+            if state.isWin() or state.isLose() or depth == 0:
+                return self.evaluationFunction(state)
 
-        Here are some method calls that might be useful when implementing minimax.
+            numAgents = state.getNumAgents()
+            legalActions = state.getLegalActions(agentIndex)
 
-        gameState.getLegalActions(agentIndex):
-        Returns a list of legal actions for an agent
-        agentIndex=0 means Pacman, ghosts are >= 1
+            nextAgent = (agentIndex + 1) % numAgents
+            nextDepth = depth - 1 if nextAgent == 0 else depth
 
-        gameState.generateSuccessor(agentIndex, action):
-        Returns the successor game state after an agent takes an action
+            successors = [state.generateSuccessor(agentIndex, a) for a in legalActions]
+            scores = [minimax(s, nextDepth, nextAgent) for s in successors]
 
-        gameState.getNumAgents():
-        Returns the total number of agents in the game
+            if agentIndex == 0:
+                return max(scores)  
+            else:
+                return min(scores)   
 
-        gameState.isWin():
-        Returns whether or not the game state is a winning state
+        legalActions = gameState.getLegalActions(0)
+        scores = [minimax(gameState.generateSuccessor(0, a), self.depth, 1) for a in legalActions]
+        return legalActions[scores.index(max(scores))]
 
-        gameState.isLose():
-        Returns whether or not the game state is a losing state
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
