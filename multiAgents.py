@@ -243,6 +243,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
 #  Q3 – ALPHA-BETA PRUNING AGENT
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
+<<<<<<< Updated upstream
     
 
     def getAction(self, gameState: GameState):
@@ -295,6 +296,115 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
 
 #  Q4 – EXPECTIMAX AGENT
+=======
+
+    def getAction(self, gameState: GameState):
+
+        def alphabeta(state, depth, agentIndex, alpha, beta):
+
+            # terminal
+            if state.isWin() or state.isLose() or depth == 0:
+                return self.evaluationFunction(state)
+
+            numAgents = state.getNumAgents()
+
+            nextAgent = (agentIndex + 1) % numAgents
+            nextDepth = depth - 1 if nextAgent == 0 else depth
+
+            legalActions = state.getLegalActions(agentIndex)
+
+            # =========================
+            # PACMAN (MAX)
+            # =========================
+            if agentIndex == 0:
+
+                value = float('-inf')
+
+                for action in legalActions:
+
+                    successor = state.generateSuccessor(agentIndex, action)
+
+                    value = max(
+                        value,
+                        alphabeta(
+                            successor,
+                            nextDepth,
+                            nextAgent,
+                            alpha,
+                            beta
+                        )
+                    )
+
+                    # beta cutoff
+                    if value > beta:
+                        return value
+
+                    alpha = max(alpha, value)
+
+                return value
+
+            # =========================
+            # GHOST (MIN)
+            # =========================
+            else:
+
+                value = float('inf')
+
+                for action in legalActions:
+
+                    successor = state.generateSuccessor(agentIndex, action)
+
+                    value = min(
+                        value,
+                        alphabeta(
+                            successor,
+                            nextDepth,
+                            nextAgent,
+                            alpha,
+                            beta
+                        )
+                    )
+
+                    # alpha cutoff
+                    if value < alpha:
+                        return value
+
+                    beta = min(beta, value)
+
+                return value
+
+        # =================================
+        # ROOT
+        # =================================
+
+        alpha = float('-inf')
+        beta = float('inf')
+
+        bestAction = None
+        bestValue = float('-inf')
+
+        legalActions = gameState.getLegalActions(0)
+
+        for action in legalActions:
+
+            successor = gameState.generateSuccessor(0, action)
+
+            value = alphabeta(
+                successor,
+                self.depth,
+                1,
+                alpha,
+                beta
+            )
+
+            if value > bestValue:
+                bestValue = value
+                bestAction = action
+
+            alpha = max(alpha, bestValue)
+
+        return bestAction
+>>>>>>> Stashed changes
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
 
@@ -396,11 +506,80 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
 def betterEvaluationFunction(currentGameState: GameState):
     
 
+<<<<<<< Updated upstream
     # ── Terminal states dominate everything ──
     if currentGameState.isWin():
         return 10000 + currentGameState.getScore()
     if currentGameState.isLose():
         return -10000 + currentGameState.getScore()
+=======
+    DESCRIPTION: <write something here so we know what you did>
+    """
+    "*** YOUR CODE HERE ***"
+
+    pos = currentGameState.getPacmanPosition()
+    food = currentGameState.getFood().asList()
+    ghosts = currentGameState.getGhostStates()
+    capsules = currentGameState.getCapsules()
+
+    score = currentGameState.getScore()
+
+    # ==================================
+    # FOOD
+    # ==================================
+    if food:
+
+        foodDistances = [manhattanDistance(pos, f) for f in food]
+
+        closestFood = min(foodDistances)
+
+        # ưu tiên food gần
+        score += 15.0 / (closestFood + 1)
+
+        # giảm số lượng food còn lại
+        score -= 4 * len(food)
+
+    # ==================================
+    # CAPSULE
+    # ==================================
+    score -= 20 * len(capsules)
+
+    # ==================================
+    # GHOST
+    # ==================================
+    for ghost in ghosts:
+
+        ghostPos = ghost.getPosition()
+        dist = manhattanDistance(pos, ghostPos)
+
+        scared = ghost.scaredTimer
+
+        if scared > 0:
+
+            # ăn ghost nếu có thể
+            score += 200.0 / (dist + 1)
+
+        else:
+
+            # né ghost cực mạnh
+            if dist == 0:
+                return -999999
+
+            elif dist <= 1:
+                score -= 1000
+
+            elif dist <= 2:
+                score -= 400
+
+            elif dist <= 3:
+                score -= 150
+
+            else:
+                score += dist * 0.5
+
+    return score
+    util.raiseNotDefined()
+>>>>>>> Stashed changes
 
     pacmanPos   = currentGameState.getPacmanPosition()
     foodList    = currentGameState.getFood().asList()
