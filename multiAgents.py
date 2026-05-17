@@ -19,6 +19,16 @@ import random, util
 from game import Agent
 from pacman import GameState
 
+from util import manhattanDistance, Queue
+from game import Directions
+import random, util
+
+from game import Agent
+from pacman import GameState
+
+
+#  BFS DISTANCE  (wall-aware)
+
 def bfsDistance(pos, target, walls):
     
     if pos == target:
@@ -41,7 +51,6 @@ def bfsDistance(pos, target, walls):
 
 
 def bfsClosest(pos, targets, walls):
-   
     if not targets:
         return float('inf'), None
     targetSet = set(targets)
@@ -65,7 +74,6 @@ def bfsClosest(pos, targets, walls):
 
 
 def openNeighbours(pos, walls):
-    
     x, y = pos
     count = 0
     for dx, dy in [(1,0),(-1,0),(0,1),(0,-1)]:
@@ -74,6 +82,7 @@ def openNeighbours(pos, walls):
     return count
 
 
+# DEFAULT LEAF EVALUATOR  (module scope – required for util.lookup)
 
 def scoreEvaluationFunction(currentGameState: GameState):
     """
@@ -83,10 +92,9 @@ def scoreEvaluationFunction(currentGameState: GameState):
     return currentGameState.getScore()
 
 
-# Q1 – REFLEX AGENT
+#  Q1 – REFLEX AGENT
 
 class ReflexAgent(Agent):
-    
 
     def getAction(self, gameState: GameState):
         legalMoves = gameState.getLegalActions()
@@ -107,11 +115,13 @@ class ReflexAgent(Agent):
 
         score = successorGameState.getScore()
 
-        # ── STOP penalty ──
+        # ── STOP penalty ─────────────────────────────────────────────────────
+        # Prevents oscillation / freezing when other scores tie.
         if action == Directions.STOP:
             score -= 80
 
-        # ── Food gradient ──
+        # ── Food gradient ─────────────────────────────────────────────────────
+        # ── Food gradient ─────────────────────────────────────────────────────
         foodList = newFood.asList()
 
         # IMPORTANT:
@@ -161,14 +171,18 @@ class ReflexAgent(Agent):
                     score -= 30
 
                 # ESCAPE ROUTE PENALTY
+                # If Pacman is in a dead-end / corridor AND a ghost is close,
+                # that position is far more dangerous than open space.
+                # exits == 1 → dead end, exits == 2 → corridor
             if dist <= 4 and exits <= 2:
 
+                # corridor / dead-end danger amplification
                 if exits == 1:
                     score -= 300
                 else:
                     score -= 190
 
-        # ── Capsule bonus ──
+        # ── Capsule bonus ─────────────────────────────────────────────────────
         if newCapsules:
 
             closestCap = min(
@@ -176,6 +190,7 @@ class ReflexAgent(Agent):
                 for c in newCapsules
             )
 
+            # ghost nearby => emergency capsule mode
             ghostDanger = False
 
             for ghostState in newGhostStates:
@@ -198,7 +213,9 @@ class ReflexAgent(Agent):
         return score
 
 
-#  BASE CLASS
+# ============================================================================
+# BASE CLASS
+# ============================================================================
 
 class MultiAgentSearchAgent(Agent):
     """
@@ -213,7 +230,9 @@ class MultiAgentSearchAgent(Agent):
         self.depth = int(depth)
 
 
-# Q2: MINIMAX AGENT
+# ============================================================================
+# Q2 – MINIMAX AGENT
+# ============================================================================
 
 class MinimaxAgent(MultiAgentSearchAgent):
 
@@ -240,12 +259,12 @@ class MinimaxAgent(MultiAgentSearchAgent):
         scores = [minimax(gameState.generateSuccessor(0, a), self.depth, 1) for a in legalActions]
         return legalActions[scores.index(max(scores))]
 
-#  Q3 – ALPHA-BETA PRUNING AGENT
+# ============================================================================
+# Q3 – ALPHA-BETA PRUNING AGENT
+# ============================================================================
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
-<<<<<<< Updated upstream
     
-
     def getAction(self, gameState: GameState):
         numAgents = gameState.getNumAgents()
 
@@ -295,116 +314,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         return bestAction
 
 
-#  Q4 – EXPECTIMAX AGENT
-=======
-
-    def getAction(self, gameState: GameState):
-
-        def alphabeta(state, depth, agentIndex, alpha, beta):
-
-            # terminal
-            if state.isWin() or state.isLose() or depth == 0:
-                return self.evaluationFunction(state)
-
-            numAgents = state.getNumAgents()
-
-            nextAgent = (agentIndex + 1) % numAgents
-            nextDepth = depth - 1 if nextAgent == 0 else depth
-
-            legalActions = state.getLegalActions(agentIndex)
-
-            # =========================
-            # PACMAN (MAX)
-            # =========================
-            if agentIndex == 0:
-
-                value = float('-inf')
-
-                for action in legalActions:
-
-                    successor = state.generateSuccessor(agentIndex, action)
-
-                    value = max(
-                        value,
-                        alphabeta(
-                            successor,
-                            nextDepth,
-                            nextAgent,
-                            alpha,
-                            beta
-                        )
-                    )
-
-                    # beta cutoff
-                    if value > beta:
-                        return value
-
-                    alpha = max(alpha, value)
-
-                return value
-
-            # =========================
-            # GHOST (MIN)
-            # =========================
-            else:
-
-                value = float('inf')
-
-                for action in legalActions:
-
-                    successor = state.generateSuccessor(agentIndex, action)
-
-                    value = min(
-                        value,
-                        alphabeta(
-                            successor,
-                            nextDepth,
-                            nextAgent,
-                            alpha,
-                            beta
-                        )
-                    )
-
-                    # alpha cutoff
-                    if value < alpha:
-                        return value
-
-                    beta = min(beta, value)
-
-                return value
-
-        # =================================
-        # ROOT
-        # =================================
-
-        alpha = float('-inf')
-        beta = float('inf')
-
-        bestAction = None
-        bestValue = float('-inf')
-
-        legalActions = gameState.getLegalActions(0)
-
-        for action in legalActions:
-
-            successor = gameState.generateSuccessor(0, action)
-
-            value = alphabeta(
-                successor,
-                self.depth,
-                1,
-                alpha,
-                beta
-            )
-
-            if value > bestValue:
-                bestValue = value
-                bestAction = action
-
-            alpha = max(alpha, bestValue)
-
-        return bestAction
->>>>>>> Stashed changes
+# ============================================================================
+# Q4 – EXPECTIMAX AGENT
+# ============================================================================
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
 
@@ -499,87 +411,18 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 bestAction = action
 
         return bestAction
-
-
-#  Q5 – BETTER EVALUATION FUNCTION  
+# ============================================================================
+# Q5 – BETTER EVALUATION FUNCTION  (also used as default for Q2/Q3/Q4)
+# ============================================================================
 
 def betterEvaluationFunction(currentGameState: GameState):
     
 
-<<<<<<< Updated upstream
-    # ── Terminal states dominate everything ──
+    # ── Terminal states dominate everything ──────────────────────────────────
     if currentGameState.isWin():
         return 10000 + currentGameState.getScore()
     if currentGameState.isLose():
         return -10000 + currentGameState.getScore()
-=======
-    DESCRIPTION: <write something here so we know what you did>
-    """
-    "*** YOUR CODE HERE ***"
-
-    pos = currentGameState.getPacmanPosition()
-    food = currentGameState.getFood().asList()
-    ghosts = currentGameState.getGhostStates()
-    capsules = currentGameState.getCapsules()
-
-    score = currentGameState.getScore()
-
-    # ==================================
-    # FOOD
-    # ==================================
-    if food:
-
-        foodDistances = [manhattanDistance(pos, f) for f in food]
-
-        closestFood = min(foodDistances)
-
-        # ưu tiên food gần
-        score += 15.0 / (closestFood + 1)
-
-        # giảm số lượng food còn lại
-        score -= 4 * len(food)
-
-    # ==================================
-    # CAPSULE
-    # ==================================
-    score -= 20 * len(capsules)
-
-    # ==================================
-    # GHOST
-    # ==================================
-    for ghost in ghosts:
-
-        ghostPos = ghost.getPosition()
-        dist = manhattanDistance(pos, ghostPos)
-
-        scared = ghost.scaredTimer
-
-        if scared > 0:
-
-            # ăn ghost nếu có thể
-            score += 200.0 / (dist + 1)
-
-        else:
-
-            # né ghost cực mạnh
-            if dist == 0:
-                return -999999
-
-            elif dist <= 1:
-                score -= 1000
-
-            elif dist <= 2:
-                score -= 400
-
-            elif dist <= 3:
-                score -= 150
-
-            else:
-                score += dist * 0.5
-
-    return score
-    util.raiseNotDefined()
->>>>>>> Stashed changes
 
     pacmanPos   = currentGameState.getPacmanPosition()
     foodList    = currentGameState.getFood().asList()
