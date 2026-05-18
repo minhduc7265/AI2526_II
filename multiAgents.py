@@ -27,60 +27,6 @@ from game import Agent
 from pacman import GameState
 
 
-#  BFS DISTANCE  (wall-aware)
-
-def bfsDistance(pos, target, walls):
-    
-    if pos == target:
-        return 0
-    visited = set()
-    queue   = Queue()
-    queue.push((pos, 0))
-    visited.add(pos)
-    while not queue.isEmpty():
-        (x, y), dist = queue.pop()
-        for dx, dy in [(1,0),(-1,0),(0,1),(0,-1)]:
-            nx, ny = x + dx, y + dy
-            npos   = (nx, ny)
-            if npos == target:
-                return dist + 1
-            if not walls[nx][ny] and npos not in visited:
-                visited.add(npos)
-                queue.push((npos, dist + 1))
-    return float('inf')
-
-
-def bfsClosest(pos, targets, walls):
-    if not targets:
-        return float('inf'), None
-    targetSet = set(targets)
-    if pos in targetSet:
-        return 0, pos
-    visited = set()
-    queue   = Queue()
-    queue.push((pos, 0))
-    visited.add(pos)
-    while not queue.isEmpty():
-        (x, y), dist = queue.pop()
-        for dx, dy in [(1,0),(-1,0),(0,1),(0,-1)]:
-            nx, ny = x + dx, y + dy
-            npos   = (nx, ny)
-            if npos in targetSet:
-                return dist + 1, npos
-            if not walls[nx][ny] and npos not in visited:
-                visited.add(npos)
-                queue.push((npos, dist + 1))
-    return float('inf'), None
-
-
-def openNeighbours(pos, walls):
-    x, y = pos
-    count = 0
-    for dx, dy in [(1,0),(-1,0),(0,1),(0,-1)]:
-        if not walls[x+dx][y+dy]:
-            count += 1
-    return count
-
 
 # DEFAULT LEAF EVALUATOR  (module scope – required for util.lookup)
 
@@ -213,10 +159,6 @@ class ReflexAgent(Agent):
         return score
 
 
-# ============================================================================
-# BASE CLASS
-# ============================================================================
-
 class MultiAgentSearchAgent(Agent):
     """
     self.depth              – full plies to search
@@ -273,17 +215,17 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 return self.evaluationFunction(state)
             if agentIndex == 0 and depth == 0:
                 return self.evaluationFunction(state)
-
+            # Manage turns and tree depth
             legalActions = state.getLegalActions(agentIndex)
             nextAgent    = (agentIndex + 1) % numAgents
-            nextDepth    = depth - 1 if nextAgent == 0 else depth
+            nextDepth    = depth - 1 if nextAgent == 0 else depth #The depth of the tree depends on agentIndex
 
             if agentIndex == 0:                        # MAX
                 value = float('-inf')
                 for a in legalActions:
                     child = state.generateSuccessor(agentIndex, a)
                     value = max(value, alphaBeta(child, nextAgent, nextDepth, alpha, beta))
-                    if value > beta:                   # strict, NOT >=
+                    if value > beta:                   
                         return value
                     alpha = max(alpha, value)
                 return value
@@ -292,7 +234,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 for a in legalActions:
                     child = state.generateSuccessor(agentIndex, a)
                     value = min(value, alphaBeta(child, nextAgent, nextDepth, alpha, beta))
-                    if value < alpha:                  # strict, NOT <=
+                    if value < alpha:                  
                         return value
                     beta = min(beta, value)
                 return value
@@ -335,9 +277,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             nextAgent = (agentIndex + 1) % numAgents
             nextDepth = depth - 1 if nextAgent == 0 else depth
 
-            # =========================
-            # PACMAN (MAX)
-            # =========================
+            # PACMAN 
             if agentIndex == 0:
 
                 value = float('-inf')
@@ -360,9 +300,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
 
                 return value
 
-            # =========================
-            # GHOST (EXPECTATION)
-            # =========================
+            # GHOST 
             else:
 
                 total = 0
@@ -411,18 +349,69 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 bestAction = action
 
         return bestAction
-# ============================================================================
-# Q5 – BETTER EVALUATION FUNCTION  (also used as default for Q2/Q3/Q4)
-# ============================================================================
+        
+    
+#  BFS DISTANCE  (wall-aware) for Q5
+
+def bfsDistance(pos, target, walls):
+    
+    if pos == target:
+        return 0
+    visited = set()
+    queue   = Queue()
+    queue.push((pos, 0))
+    visited.add(pos)
+    while not queue.isEmpty():
+        (x, y), dist = queue.pop()
+        for dx, dy in [(1,0),(-1,0),(0,1),(0,-1)]:
+            nx, ny = x + dx, y + dy
+            npos   = (nx, ny)
+            if npos == target:
+                return dist + 1
+            if not walls[nx][ny] and npos not in visited:
+                visited.add(npos)
+                queue.push((npos, dist + 1))
+    return float('inf')
+
+
+def bfsClosest(pos, targets, walls):
+    if not targets:
+        return float('inf'), None
+    targetSet = set(targets)
+    if pos in targetSet:
+        return 0, pos
+    visited = set()
+    queue   = Queue()
+    queue.push((pos, 0))
+    visited.add(pos)
+    while not queue.isEmpty():
+        (x, y), dist = queue.pop()
+        for dx, dy in [(1,0),(-1,0),(0,1),(0,-1)]:
+            nx, ny = x + dx, y + dy
+            npos   = (nx, ny)
+            if npos in targetSet:
+                return dist + 1, npos
+            if not walls[nx][ny] and npos not in visited:
+                visited.add(npos)
+                queue.push((npos, dist + 1))
+    return float('inf'), None
+
+
+def openNeighbours(pos, walls):
+    x, y = pos
+    count = 0
+    for dx, dy in [(1,0),(-1,0),(0,1),(0,-1)]:
+        if not walls[x+dx][y+dy]:
+            count += 1
+    return count
+#  Q5 – BETTER EVALUATION FUNCTION  
 
 def betterEvaluationFunction(currentGameState: GameState):
-    
-
     # ── Terminal states dominate everything ──────────────────────────────────
     if currentGameState.isWin():
-        return 10000 + currentGameState.getScore()
+        return 100000 + currentGameState.getScore()
     if currentGameState.isLose():
-        return -10000 + currentGameState.getScore()
+        return -100000 + currentGameState.getScore()
 
     pacmanPos   = currentGameState.getPacmanPosition()
     foodList    = currentGameState.getFood().asList()
@@ -430,102 +419,56 @@ def betterEvaluationFunction(currentGameState: GameState):
     capsules    = currentGameState.getCapsules()
     walls       = currentGameState.getWalls()
 
+    # Base score game
     evaluation = currentGameState.getScore()
 
-    # ── 1. Food count urgency ─────────────────────────────────────────────────
-    evaluation -= 25 * len(foodList)
+    # ── 1. Food count urgency ───
+    evaluation -= 100 * len(foodList)
 
-    # ── 2. Nearest food (BFS – wall-aware) ───────────────────────────────────
-    bfsFoodDist, _ = bfsClosest(pacmanPos, foodList, walls)
-    if bfsFoodDist < float('inf'):
-        evaluation += 35.0 / max(bfsFoodDist, 1)
+    # Strong linear suction to the nearest food pellet to maintain smoothness
+    if foodList:
+        bfsFoodDist, _ = bfsClosest(pacmanPos, foodList, walls)
+        if bfsFoodDist < float('inf'):
+            evaluation -= 2.0 * bfsFoodDist
 
-    # ── 3. Escape routes at current position ─────────────────────────────────
     exits = openNeighbours(pacmanPos, walls)
-    # Mild bonus for being in open space (more tactical options)
-    if exits >= 3:
-        evaluation += 5
+    minActiveGhostDist = float('inf')
 
-    # ── 4 & 5. Ghost interaction (BFS-accurate) ───────────────────────────────
+    # ── 2. Ghost Interaction & Tracking ────
     for ghostState in ghostStates:
-        ghostPos   = ghostState.getPosition()
-        scaredTime = ghostState.scaredTimer
+        ghostPos = ghostState.getPosition()
         ghostPos = (int(ghostPos[0]), int(ghostPos[1]))
+        scaredTime = ghostState.scaredTimer
+
         bfsDist = bfsDistance(pacmanPos, ghostPos, walls)
+
         if scaredTime > 0:
-            # Scared: aggressive chasing
-            # scaredTime > bfsDist means we can actually reach it before it recovers
+            # FIERCE GHOST HUNTING
             if scaredTime > bfsDist:
-                evaluation += 150.0 / max(bfsDist, 1)
-            else:
-                evaluation += 50.0 / max(bfsDist, 1)   # too far, mild bonus
+                evaluation += (120.0 - 8.0 * bfsDist)
         else:
-            # Active ghost: BFS-accurate graduated penalty
+            minActiveGhostDist = min(minActiveGhostDist, bfsDist)
+            # REALISTIC SURVIVAL MODE
             if bfsDist <= 1:
+                evaluation -= 3000  
+            elif bfsDist == 2:
                 evaluation -= 800
-            elif bfsDist <= 2:
-                evaluation -= 220
-            elif bfsDist <= 3:
-                evaluation -= 100
-            elif bfsDist <= 4:
-                evaluation -= 25
-            elif bfsDist >= 5:
-                evaluation -= 10
+            elif bfsDist == 3:
+                evaluation -= 200
+                # if the ghost is nearby and you end up in a narrow alley
+                if exits <= 2:
+                    evaluation -= 150
 
-            elif bfsDist >= 6:
-                evaluation -= 15
-
-            elif bfsDist >= 7:
-                evaluation -= 20
-
-            elif bfsDist >= 8:
-                evaluation -= 30
-
-
-
-
-            # ESCAPE ROUTE SCALING
-            # Being in a dead-end or corridor with a nearby ghost is much more
-            # dangerous than being in open space.
-            if bfsDist <= 4 and exits <= 2:
-                # exits == 1 (dead end): extra −200; exits == 2 (corridor): −100
-                evaluation -= (3 - exits) * 150
-
-    # ── 6. Capsule urgency ────────────────────────────────────────────────────
-
+    # ── 3. Capsule urgency ───
+    evaluation -= 200 * len(capsules)
     if capsules:
-
         capDist, _ = bfsClosest(pacmanPos, capsules, walls)
+        if capDist < float('inf'):
+            evaluation -= 3.0 * capDist
+            if minActiveGhostDist <= 5 and capDist < minActiveGhostDist:
+                # Force Pacman to charge straight into the capsule.
+                evaluation += (160.0 - 20.0 * capDist)
 
-        activeGhostNear = False
-
-        for ghostState in ghostStates:
-
-            if ghostState.scaredTimer == 0:
-
-                ghostPos = ghostState.getPosition()
-
-                # ghost positions may be float
-                ghostPos = (int(ghostPos[0]), int(ghostPos[1]))
-
-                gdist = bfsDistance(
-                    pacmanPos,
-                    ghostPos,
-                    walls
-                )
-
-                if gdist <= 5:
-                    activeGhostNear = True
-                    break
-
-        if activeGhostNear:
-            evaluation += 120.0 / max(capDist, 1)
-        else:
-            evaluation += 20.0 / max(capDist, 1)
-
-    evaluation -= 30 * len(capsules)
     return evaluation
 
-
-# Abbreviation required by autograder
 better = betterEvaluationFunction
