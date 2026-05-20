@@ -18,7 +18,12 @@ import random, util
 
 from game import Agent
 from pacman import GameState
-
+PARAMS = {
+        "food": 6.25,
+        "capsule": 10.0,
+        "ghost": 5.0,
+        "scared": 250.0
+    }
 class ReflexAgent(Agent):
     """
     A reflex agent chooses an action at each choice point by examining
@@ -257,15 +262,47 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
 
         return bestAction
 
-def betterEvaluationFunction(currentGameState: GameState):
-    """
-    Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
-    evaluation function (question 5).
+def betterEvaluationFunction(currentGameState):
+    pos = currentGameState.getPacmanPosition()
+    foodList = currentGameState.getFood().asList()
+    ghostStates = currentGameState.getGhostStates()
+    # Lấy danh sách tọa độ các viên thuốc sức mạnh (Capsule)
+    capsules = currentGameState.getCapsules()
 
-    DESCRIPTION: <write something here so we know what you did>
-    """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    score = currentGameState.getScore()
+    if currentGameState.getPacmanState().getDirection() == Directions.STOP:
+        score = -50
+ 
+
+    if len(foodList) > 0:
+        listFoodDistance = [manhattanDistance(pos, foodPos) for foodPos in foodList]
+        minDistance = min(listFoodDistance)
+        score += PARAMS["food"] / (minDistance + 0.1)
+    
+    if len(capsules) > 0:
+        listCapDistance = [manhattanDistance(pos, capPos) for capPos in capsules]
+        minCapDist = min(listCapDistance)
+        score += PARAMS["capsule"] / (minCapDist + 0.1)
+
+    for ghost in ghostStates:
+        ghostPos = ghost.getPosition()
+        ghostScaredTime = ghost.scaredTimer
+        ghostDistance = manhattanDistance(pos, ghostPos)
+
+        if ghostScaredTime == 0:
+            if ghostDistance <= 1:
+                score -= 2000
+            elif ghostDistance <= 2:
+                score -= 1000
+            elif ghostDistance <= 5:
+                score -= PARAMS["ghost"] / (ghostDistance + 0.1)
+        else:
+            if ghostDistance <= ghostScaredTime:
+                score += PARAMS["scared"] / (ghostDistance + 0.1)
+
+
+
+    return score
 
 # Abbreviation
 better = betterEvaluationFunction
