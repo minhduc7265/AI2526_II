@@ -153,11 +153,66 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     """
 
     def getAction(self, gameState: GameState):
-        """
-        Returns the minimax action using self.depth and self.evaluationFunction
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        def maxValue(state, depth, alpha, beta):
+            if state.isWin() or state.isLose() or depth == self.depth:
+                return self.evaluationFunction(state)
+
+            v = float('-inf')
+            for action in state.getLegalActions(0):
+                successor = state.generateSuccessor(0, action)
+
+                v = max(v, minValue(successor, depth, 1, alpha, beta))
+
+                if v > beta:
+                    return v
+
+                alpha = max(alpha, v)
+
+            return v
+
+        def minValue(state, depth, agentIndex, alpha, beta):
+            if state.isWin() or state.isLose() or depth == self.depth:
+                return self.evaluationFunction(state)
+
+            v = float('inf')
+            for action in state.getLegalActions(agentIndex):
+                successor = state.generateSuccessor(agentIndex, action)
+
+                if agentIndex == state.getNumAgents() - 1:
+
+                    v = min(v, maxValue(successor, depth + 1, alpha, beta))
+                else:
+                    v = min(v, minValue(successor, depth, agentIndex + 1, alpha, beta))
+
+                if v < alpha:
+                    return v
+
+                beta = min(beta, v)
+
+            return v
+
+
+        bestAction = None
+        bestScore = float("-inf")
+
+        alpha = float('-inf')
+        beta = float('inf')
+
+        for action in gameState.getLegalActions(0):
+            nextState = gameState.generateSuccessor(0, action)
+
+
+            currentScore = minValue(nextState, 0, 1, alpha, beta)
+
+            if currentScore > bestScore:
+                bestAction = action
+                bestScore = currentScore
+
+            alpha = max(alpha, bestScore)
+
+        return bestAction
+
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
@@ -165,14 +220,42 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
     """
 
     def getAction(self, gameState: GameState):
-        """
-        Returns the expectimax action using self.depth and self.evaluationFunction
 
-        All ghosts should be modeled as choosing uniformly at random from their
-        legal moves.
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def maxValue(state, depth):
+            if state.isWin() or state.isLose() or depth == self.depth:
+                return self.evaluationFunction(state)
+            v = float('-inf')
+            for action in state.getLegalActions(0):
+                successor = state.generateSuccessor(0, action)
+                v = max(v, expMinValue(successor, depth, 1))
+            return v
+
+        def expMinValue(state, depth, agentIndex):
+            if state.isWin() or state.isLose() or depth == self.depth:
+                return self.evaluationFunction(state)
+            legalActions = state.getLegalActions(agentIndex)
+            totalScore = 0
+            score = 0
+            for action in state.getLegalActions(agentIndex):
+                successor = state.generateSuccessor(agentIndex, action)
+                if agentIndex == successor.getNumAgents() - 1:
+                    score = maxValue(successor, depth + 1)
+                else:
+                    score = expMinValue(successor, depth, agentIndex + 1)
+                totalScore += score
+            return totalScore / len(legalActions)
+
+        bestAction = None
+        bestScore = float("-inf")
+
+        for action in gameState.getLegalActions(0):
+            nextState = gameState.generateSuccessor(0, action)
+            currentScore = expMinValue(nextState, 0, 1)
+            if currentScore >= bestScore:
+                bestAction = action
+                bestScore = currentScore
+
+        return bestAction
 
 def betterEvaluationFunction(currentGameState: GameState):
     """
