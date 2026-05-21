@@ -18,12 +18,8 @@ import random, util
 
 from game import Agent
 from pacman import GameState
-PARAMS = {
-        "food": 6.25,
-        "capsule": 10.0,
-        "ghost": 5.0,
-        "scared": 250.0
-    }
+PARAMS = {'food': 15.889136242364984, 'capsule': 12.868591992871977, 'ghost': 2.366298825966193, 'scared': 175, 'A': 16.93574730124145, 'B': 57.93619436594343}
+
 class ReflexAgent(Agent):
     """
     A reflex agent chooses an action at each choice point by examining
@@ -266,12 +262,15 @@ def betterEvaluationFunction(currentGameState):
     pos = currentGameState.getPacmanPosition()
     foodList = currentGameState.getFood().asList()
     ghostStates = currentGameState.getGhostStates()
-    # Lấy danh sách tọa độ các viên thuốc sức mạnh (Capsule)
     capsules = currentGameState.getCapsules()
 
     score = currentGameState.getScore()
-    if currentGameState.getPacmanState().getDirection() == Directions.STOP:
-        score = -50
+    currentDir = currentGameState.getPacmanState().getDirection()
+    if currentDir == Directions.STOP:
+        score -= 50
+
+    score -= PARAMS["A"] * len(foodList)
+    score -= PARAMS["B"] * len(capsules)
  
 
     if len(foodList) > 0:
@@ -302,7 +301,7 @@ def betterEvaluationFunction(currentGameState):
 
 
 
-    return score
+    return score + random.uniform(0, 0.00000001)
 
 # Abbreviation
 better = betterEvaluationFunction
